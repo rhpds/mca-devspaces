@@ -20,7 +20,7 @@ RUN dnf clean all && \
     && dnf clean all
 
 # Add Kai extension from GitHub release
-RUN curl -L -o /mta-vscode-extension.vsix https://github.com/migtools/editor-extensions/releases/download/v8.0.4/mta-vscode-extension-8.0.4.vsix
+RUN curl -L -o /mta-vscode-extension.vsix https://github.com/migtools/editor-extensions/releases/download/v8.0.5/mta-vscode-extension-8.0.5.vsix
 
 ENV DEFAULT_EXTENSIONS=/mta-vscode-extension.vsix   
 
