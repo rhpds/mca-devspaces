@@ -5,8 +5,8 @@ Red Hat OpenShift Dev Spaces container and devfile for [Developer Lightspeed for
 ## Features
 
 - Python 3.11, Java 17, Node.js, Maven
-- MTA VS Code extension (v8.0.4) pre-installed
-- 8GB memory allocation
+- MTA VS Code extension (v8.0.5) pre-installed
+- 10Gi memory allocation
 
 ## Usage
 
