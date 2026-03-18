@@ -2,7 +2,7 @@ schemaVersion: 2.2.0
 metadata:
   name: dls-devspaces
 components:
-  - name: kai-dev-container
+  - name: mta-dev-container
     container:
       image: quay.io/sshaaf/dls-devspaces:latest
-      memoryLimit: 8Gi
+      memoryLimit: 10Gi
