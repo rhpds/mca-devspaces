@@ -1,8 +1,54 @@
-schemaVersion: 2.2.0
+apiVersion: 1.0.0
 metadata:
-  name: dls-devspaces
+  name: dls-devspaces-with-vsix
+projects:
+  - name: workspace-project
+    git:
+      remotes:
+        origin: https://github.com/sshaaf/coolstore.git
 components:
-  - name: mta-dev-container
+  - name: tools
     container:
-      image: quay.io/sshaaf/dls-devspaces:latest
-      memoryLimit: 10Gi
+      image: registry.example.com/dls-devspaces:latest
+      memoryLimit: 1Gi
+      mountSources: true
+      endpoints:
+        - name: http
+          targetPort: 3000
+      volumeMounts:
+        - name: vsix-store
+          path: /vsix
+  - name: vsix-store
+    volume:
+      size: 100Mi
+commands:
+  - id: install-vsix-at-start
+    exec:
+      component: tools
+      workingDir: /projects/workspace-project
+      commandLine: >
+        /bin/sh -lc "
+        set -e;
+        mkdir -p /vsix;
+        # If VSIX files were baked into the image at / (from Containerfile), copy them to persistent store
+        for f in /redhat-java-extension-linux-x64.vsix /mta-vscode-extension-core.vsix /mta-vscode-extension-java.vsix; do
+          if [ -f \"$f\" ]; then cp \"$f\" /vsix/ || true; fi
+        done;
+        # If 'code' CLI is available, install; otherwise attempt Theia/che installer
+        if command -v code >/dev/null 2>&1; then
+          for v in /vsix/*.vsix; do [ -f \"$v\" ] && code --install-extension \"$v\" || true; done
+        else
+          for v in /vsix/*.vsix; do [ -f \"$v\" ] && /che/bin/theia plugman install \"$v\" || true; done
+        fi
+        "
+  - id: start
+    exec:
+      component: tools
+      workingDir: /projects/workspace-project
+      commandLine: /bin/sh -c "npm install && npm start"
+      preCondition: "always"
+compositeCommands:
+  - id: init-and-start
+    composed:
+      - install-vsix-at-start
+      - start
