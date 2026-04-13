@@ -1,54 +1,41 @@
-apiVersion: 1.0.0
+schemaVersion: 2.2.0
 metadata:
-  name: dls-devspaces-with-vsix
+  name: mta-development-env
+  version: 1.0.0
+  display-name: MTA & Java Development
+  description: "Dev Spaces environment for MTA and Java 17 development"
+
 projects:
-  - name: workspace-project
+  - name: coolstore
     git:
       remotes:
-        origin: https://github.com/sshaaf/coolstore.git
+        origin: "https://github.com/sshaaf/coolstore.git"
+
 components:
-  - name: tools
+  - name: mta-dev-container
     container:
-      image: registry.example.com/dls-devspaces:latest
-      memoryLimit: 1Gi
+      image: quay.io/sshaaf/dls-devspaces:latest
+      memoryLimit: 10Gi
+      sourceMapping: /projects
       mountSources: true
-      endpoints:
-        - name: http
-          targetPort: 3000
-      volumeMounts:
-        - name: vsix-store
-          path: /vsix
-  - name: vsix-store
-    volume:
-      size: 100Mi
+      env:
+        - name: JAVA_HOME
+          value: /usr/lib/jvm/java-17-openjdk
+        - name: M2_HOME
+          value: /usr/share/maven
+    attributes:
+      # This ensures the extensions are installed in the VS Code editor
+      vscode-extensions:
+        - redhat.java
+        - redhat.mta-vscode-extension-core
+        - redhat.mta-vscode-extension-java
+
 commands:
-  - id: install-vsix-at-start
+  - id: build-project
     exec:
-      component: tools
-      workingDir: /projects/workspace-project
-      commandLine: >
-        /bin/sh -lc "
-        set -e;
-        mkdir -p /vsix;
-        # If VSIX files were baked into the image at / (from Containerfile), copy them to persistent store
-        for f in /redhat-java-extension-linux-x64.vsix /mta-vscode-extension-core.vsix /mta-vscode-extension-java.vsix; do
-          if [ -f \"$f\" ]; then cp \"$f\" /vsix/ || true; fi
-        done;
-        # If 'code' CLI is available, install; otherwise attempt Theia/che installer
-        if command -v code >/dev/null 2>&1; then
-          for v in /vsix/*.vsix; do [ -f \"$v\" ] && code --install-extension \"$v\" || true; done
-        else
-          for v in /vsix/*.vsix; do [ -f \"$v\" ] && /che/bin/theia plugman install \"$v\" || true; done
-        fi
-        "
-  - id: start
-    exec:
-      component: tools
-      workingDir: /projects/workspace-project
-      commandLine: /bin/sh -c "npm install && npm start"
-      preCondition: "always"
-compositeCommands:
-  - id: init-and-start
-    composed:
-      - install-vsix-at-start
-      - start
+      component: mta-dev-container
+      workingDir: /projects/coolstore
+      commandLine: "mvn clean install"
+      group:
+        kind: build
+        isDefault: true
