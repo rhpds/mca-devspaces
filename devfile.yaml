@@ -74,7 +74,7 @@ commands:
     exec:
       component: mta-dev-container
       commandLine: |
-        cat <<EOF > /projects/mta-study.code-workspace
+        cat <<EOF > /projects/.code-workspace
         {
           "folders": [
             { "name": "coolstore", "path": "/projects/coolstore" },
