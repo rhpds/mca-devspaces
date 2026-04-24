@@ -4,6 +4,10 @@ metadata:
   version: 1.0.0
   display-name: MTA & Java Development
   description: Dev Spaces environment for MTA and Java 17 development
+attributes:
+  # This tells the editor to only open the 'coolstore' folder on startup
+  vscode-projects:
+    - coolstore
 projects:
   - name: coolstore
     git:
@@ -47,6 +51,13 @@ commands:
     exec:
       component: mta-dev-container
       workingDir: /projects/inventory-management
+      commandLine: mvn clean install
+      group:
+        kind: build
+  - id: build-ehr
+    exec:
+      component: mta-dev-container
+      workingDir: /projects/ehr-viewer
       commandLine: mvn clean install
       group:
         kind: build
