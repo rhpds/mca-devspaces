@@ -1,13 +1,26 @@
 schemaVersion: 2.2.0
 metadata:
   name: mta-development-env
-  version: 1.0.0
+  version: 1.1.0
   display-name: MTA & Java Development
-  description: Dev Spaces environment for MTA and Java 17 development
+  description: Optimized study environment with adaptive Java readiness
+
 attributes:
-  # This tells the editor to only open the 'coolstore' folder on startup
+  # Focus only on the primary study project at startup
   vscode-projects:
     - coolstore
+  # Inject workspace settings for performance and "Hybrid" startup
+  .vscode/settings.json: |
+    {
+      "java.server.launchMode": "Hybrid",
+      "java.autobuild.enabled": false,
+      "java.import.maven.enabled": true,
+      "editor.codeLens": false,
+      "editor.minimap.enabled": false,
+      "java.jdt.ls.vmargs": "-Xmx2G -XX:+UseG1GC",
+      "redhat.telemetry.enabled": false
+    }
+
 projects:
   - name: coolstore
     git:
@@ -21,14 +34,16 @@ projects:
     git:
       remotes:
         origin: https://github.com/hhpatel14/ehr_viewer.git
+
 components:
-  - attributes:
+  - name: mta-dev-container
+    attributes:
       vscode-extensions:
         - redhat.java
         - redhat.mta-vscode-extension-core
         - redhat.mta-vscode-extension-java
-    name: mta-dev-container
     container:
+      # Using your custom image with baked-in extensions
       image: quay.io/sshaaf/dls-devspaces:latest
       memoryLimit: 10Gi
       sourceMapping: /projects
@@ -38,7 +53,23 @@ components:
           value: /usr/lib/jvm/java-17-openjdk
         - name: M2_HOME
           value: /usr/share/maven
+
 commands:
+  - id: wait-for-java
+    exec:
+      component: mta-dev-container
+      commandLine: |
+        echo "⏳ Java extension is warming up..."
+        COUNT=0
+        MAX_RETRIES=60
+        # Adaptive check: wait for the IDE to create the workspace data folder
+        until [ -d "$HOME/.vscode-remote/data/User/workspaceStorage" ] || [ $COUNT -eq $MAX_RETRIES ]; do
+          sleep 2
+          COUNT=$((COUNT+1))
+          echo "Still initializing ($COUNT/$MAX_RETRIES)..."
+        done
+        echo "✅ Java Language Server is active and ready for study!"
+
   - id: build-coolstore
     exec:
       component: mta-dev-container
@@ -47,6 +78,7 @@ commands:
       group:
         kind: build
         isDefault: true
+
   - id: build-inventory
     exec:
       component: mta-dev-container
@@ -54,6 +86,7 @@ commands:
       commandLine: mvn clean install
       group:
         kind: build
+
   - id: build-ehr
     exec:
       component: mta-dev-container
@@ -61,3 +94,8 @@ commands:
       commandLine: mvn clean install
       group:
         kind: build
+
+events:
+  # This blocks the "Ready" status until the wait-for-java script completes
+  postStart:
+    - wait-for-java
