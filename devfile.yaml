@@ -1,9 +1,9 @@
 schemaVersion: 2.2.0
 metadata:
   name: mta-development-env
-  version: 1.2.0
+  version: 1.9.0
   display-name: MTA & Java Development
-  description: Optimized study environment with forced IDE preferences
+  description: Optimized environment with default pathing and calibrated readiness
 
 attributes:
   # Focuses the Explorer sidebar on the primary project
@@ -27,7 +27,6 @@ projects:
 components:
   - name: mta-dev-container
     attributes:
-      # These preferences are injected directly into the IDE's machine settings
       preferences:
         workbench.colorTheme: "Default Light Modern"
         java.server.launchMode: "Standard"
@@ -47,29 +46,24 @@ components:
       memoryLimit: 10Gi
       sourceMapping: /projects
       mountSources: true
-      env:
-        - name: JAVA_HOME
-          value: /usr/lib/jvm/java-17-openjdk
-        - name: M2_HOME
-          value: /usr/share/maven
+      # JAVA_HOME and M2_HOME env settings removed
 
 commands:
-  - id: setup-mta-global-settings
+  - id: setup-mta-provider-settings
     exec:
       component: mta-dev-container
       commandLine: |
         TARGET_DIR="/checode/remote/data/User/globalStorage/redhat.mta-core/settings"
-        # Using the raw URL to avoid getting HTML instead of YAML
         RAW_URL="https://raw.githubusercontent.com/sshaaf/dls-devspaces/devfile-test/provider-settings.yaml"
         echo "⏳ Injecting MTA provider settings..."
         mkdir -p "$TARGET_DIR"
-        # -f fails on 404, -L follows redirects, -s is silent
         curl -fLs "$RAW_URL" -o "$TARGET_DIR/provider-settings.yaml"
         if [ $? -eq 0 ]; then
           echo "✅ provider-settings.yaml successfully pulled via curl."
         else
-          echo "❌ Failed to pull provider-settings.yaml. Check the URL or network."
+          echo "❌ Failed to pull provider-settings.yaml."
         fi
+
   - id: create-workspace-file
     exec:
       component: mta-dev-container
@@ -77,7 +71,7 @@ commands:
         cat <<EOF > /projects/.code-workspace
         {
           "folders": [
-            { "name": "coolstore", "path": "/projects/coolstore" },
+            { "name": "coolstore", "path": "/projects/coolstore" }
           ],
           "settings": {
             "java.compile.nullAnalysis.mode": "automatic"
@@ -90,19 +84,16 @@ commands:
     exec:
       component: mta-dev-container
       commandLine: |
-        echo "⏳ Step 1: Waiting for Workspace Storage..."
-        COUNT=0
-        until [ -d "$HOME/.vscode-remote/data/User/workspaceStorage" ] || [ $COUNT -eq 30 ]; do
+        echo "⏳ Step 1: Waiting for Che-Code Workspace Storage..."
+        until [ -d "/checode/remote/data/User/workspaceStorage" ]; do
           sleep 2
-          COUNT=$((COUNT+1))
         done
-        echo "⏳ Step 2: Waiting for Java LSP process..."
-        COUNT=0
-        until pgrep -f "org.eclipse.jdt.ls.product" > /dev/null || [ $COUNT -eq 30 ]; do
+
+        echo "⏳ Step 2: Waiting for Java LSP (java-external-p)..."
+        until pgrep -f "java-external-p" > /dev/null; do
           sleep 2
-          COUNT=$((COUNT+1))
         done
-        echo "✅ Java Environment is fully initialized!"
+        echo "✅ Java Environment is fully ready!"
 
   - id: build-coolstore
     exec:
@@ -130,8 +121,7 @@ commands:
         kind: build
 
 events:
-  # Ensures the workspace doesn't finish loading until the script exits
   postStart:
-    - wait-for-java
     - create-workspace-file
-    - setup-mta-global-settings
+    - setup-mta-provider-settings
+    - wait-for-java
