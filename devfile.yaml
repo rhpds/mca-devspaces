@@ -95,3 +95,4 @@ events:
   # Ensures the workspace doesn't finish loading until the script exits
   postStart:
     - wait-for-java
+
