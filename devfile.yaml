@@ -1,25 +1,14 @@
 schemaVersion: 2.2.0
 metadata:
   name: mta-development-env
-  version: 1.1.0
+  version: 1.2.0
   display-name: MTA & Java Development
-  description: Optimized study environment with adaptive Java readiness
+  description: Optimized study environment with forced IDE preferences
 
 attributes:
-  # Focus only on the primary study project at startup
+  # Focuses the Explorer sidebar on the primary project
   vscode-projects:
     - coolstore
-  # Inject workspace settings for performance and "Hybrid" startup
-  .vscode/settings.json: |
-    {
-      "java.server.launchMode": "Hybrid",
-      "java.autobuild.enabled": false,
-      "java.import.maven.enabled": true,
-      "editor.codeLens": false,
-      "editor.minimap.enabled": false,
-      "java.jdt.ls.vmargs": "-Xmx2G -XX:+UseG1GC",
-      "redhat.telemetry.enabled": false
-    }
 
 projects:
   - name: coolstore
@@ -38,12 +27,20 @@ projects:
 components:
   - name: mta-dev-container
     attributes:
+      # These preferences are injected directly into the IDE's machine settings
+      preferences:
+        java.server.launchMode: "Hybrid"
+        java.autobuild.enabled: false
+        java.import.maven.enabled: true
+        editor.codeLens: false
+        editor.minimap.enabled: false
+        java.jdt.ls.vmargs: "-Xmx2G -XX:+UseG1GC"
+        redhat.telemetry.enabled: false
       vscode-extensions:
         - redhat.java
         - redhat.mta-vscode-extension-core
         - redhat.mta-vscode-extension-java
     container:
-      # Using your custom image with baked-in extensions
       image: quay.io/sshaaf/dls-devspaces:latest
       memoryLimit: 10Gi
       sourceMapping: /projects
@@ -62,13 +59,12 @@ commands:
         echo "⏳ Java extension is warming up..."
         COUNT=0
         MAX_RETRIES=60
-        # Adaptive check: wait for the IDE to create the workspace data folder
         until [ -d "$HOME/.vscode-remote/data/User/workspaceStorage" ] || [ $COUNT -eq $MAX_RETRIES ]; do
-          sleep 1
+          sleep 2
           COUNT=$((COUNT+1))
           echo "Still initializing ($COUNT/$MAX_RETRIES)..."
         done
-        echo "✅ Java Language Server is active and ready for study!"
+        echo "✅ Java Language Server is active and ready!"
 
   - id: build-coolstore
     exec:
@@ -96,6 +92,6 @@ commands:
         kind: build
 
 events:
-  # This blocks the "Ready" status until the wait-for-java script completes
+  # Ensures the workspace doesn't finish loading until the script exits
   postStart:
     - wait-for-java
