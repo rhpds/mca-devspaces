@@ -36,6 +36,7 @@ components:
         editor.minimap.enabled: false
         java.jdt.ls.vmargs: "-Xmx2G -XX:+UseG1GC"
         redhat.telemetry.enabled: false
+        java.compile.nullAnalysis.mode: false
       vscode-extensions:
         - redhat.java
         - redhat.mta-vscode-extension-core
