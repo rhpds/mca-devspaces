@@ -29,7 +29,8 @@ components:
     attributes:
       # These preferences are injected directly into the IDE's machine settings
       preferences:
-        java.server.launchMode: "Hybrid"
+        workbench.colorTheme: "Default Light Modern"
+        java.server.launchMode: "Standard"
         java.autobuild.enabled: false
         java.import.maven.enabled: true
         editor.codeLens: false
