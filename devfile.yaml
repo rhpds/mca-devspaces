@@ -3,16 +3,27 @@ metadata:
   name: mta-development-env
   version: 1.0.0
   display-name: MTA & Java Development
-  description: "Dev Spaces environment for MTA and Java 17 development"
-
+  description: Dev Spaces environment for MTA and Java 17 development
 projects:
   - name: coolstore
     git:
       remotes:
-        origin: "https://github.com/sshaaf/coolstore.git"
-
+        origin: https://github.com/sshaaf/coolstore.git
+  - name: inventory-management
+    git:
+      remotes:
+        origin: https://github.com/savitharaghunathan/inventory_management.git
+  - name: ehr-viewer
+    git:
+      remotes:
+        origin: https://github.com/hhpatel14/ehr_viewer.git
 components:
-  - name: mta-dev-container
+  - attributes:
+      vscode-extensions:
+        - redhat.java
+        - redhat.mta-vscode-extension-core
+        - redhat.mta-vscode-extension-java
+    name: mta-dev-container
     container:
       image: quay.io/sshaaf/dls-devspaces:latest
       memoryLimit: 10Gi
@@ -23,19 +34,19 @@ components:
           value: /usr/lib/jvm/java-17-openjdk
         - name: M2_HOME
           value: /usr/share/maven
-    attributes:
-      # This ensures the extensions are installed in the VS Code editor
-      vscode-extensions:
-        - redhat.java
-        - redhat.mta-vscode-extension-core
-        - redhat.mta-vscode-extension-java
-
 commands:
-  - id: build-project
+  - id: build-coolstore
     exec:
       component: mta-dev-container
       workingDir: /projects/coolstore
-      commandLine: "mvn clean install"
+      commandLine: mvn clean install
       group:
         kind: build
         isDefault: true
+  - id: build-inventory
+    exec:
+      component: mta-dev-container
+      workingDir: /projects/inventory-management
+      commandLine: mvn clean install
+      group:
+        kind: build
