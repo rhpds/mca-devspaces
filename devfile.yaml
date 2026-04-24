@@ -54,7 +54,23 @@ components:
           value: /usr/share/maven
 
 commands:
-- id: create-workspace-file
+  - id: setup-mta-global-settings
+    exec:
+      component: mta-dev-container
+      commandLine: |
+        TARGET_DIR="/checode/remote/data/User/globalStorage/redhat.mta-core/settings"
+        # Using the raw URL to avoid getting HTML instead of YAML
+        RAW_URL="https://raw.githubusercontent.com/sshaaf/dls-devspaces/devfile-test/provider-settings.yaml"
+        echo "⏳ Injecting MTA provider settings..."
+        mkdir -p "$TARGET_DIR"
+        # -f fails on 404, -L follows redirects, -s is silent
+        curl -fLs "$RAW_URL" -o "$TARGET_DIR/provider-settings.yaml"
+        if [ $? -eq 0 ]; then
+          echo "✅ provider-settings.yaml successfully pulled via curl."
+        else
+          echo "❌ Failed to pull provider-settings.yaml. Check the URL or network."
+        fi
+  - id: create-workspace-file
     exec:
       component: mta-dev-container
       commandLine: |
