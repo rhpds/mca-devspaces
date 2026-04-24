@@ -54,6 +54,22 @@ components:
           value: /usr/share/maven
 
 commands:
+- id: create-workspace-file
+    exec:
+      component: mta-dev-container
+      commandLine: |
+        cat <<EOF > /projects/mta-study.code-workspace
+        {
+          "folders": [
+            { "name": "coolstore", "path": "/projects/coolstore" },
+          ],
+          "settings": {
+            "java.compile.nullAnalysis.mode": "automatic"
+          }
+        }
+        EOF
+        echo "✅ Multi-root workspace file created."
+
   - id: wait-for-java
     exec:
       component: mta-dev-container
@@ -101,4 +117,4 @@ events:
   # Ensures the workspace doesn't finish loading until the script exits
   postStart:
     - wait-for-java
-
+    - create-workspace-file
