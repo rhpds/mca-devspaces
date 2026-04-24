@@ -64,7 +64,7 @@ commands:
         MAX_RETRIES=60
         # Adaptive check: wait for the IDE to create the workspace data folder
         until [ -d "$HOME/.vscode-remote/data/User/workspaceStorage" ] || [ $COUNT -eq $MAX_RETRIES ]; do
-          sleep 2
+          sleep 5
           COUNT=$((COUNT+1))
           echo "Still initializing ($COUNT/$MAX_RETRIES)..."
         done
