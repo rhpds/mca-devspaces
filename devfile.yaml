@@ -14,14 +14,6 @@ projects:
     git:
       remotes:
         origin: https://github.com/sshaaf/coolstore.git
-  - name: inventory-management
-    git:
-      remotes:
-        origin: https://github.com/savitharaghunathan/inventory_management.git
-  - name: ehr-viewer
-    git:
-      remotes:
-        origin: https://github.com/hhpatel14/ehr_viewer.git
 
 components:
   - name: mta-dev-container
@@ -63,22 +55,6 @@ commands:
           echo "❌ Failed to pull provider-settings.yaml."
         fi
 
-  - id: create-workspace-file
-    exec:
-      component: mta-dev-container
-      commandLine: |
-        rm -f /projects/.code-workspace
-        cat <<EOF > /projects/.code-workspace
-        {
-          "folders": [
-            { "name": "coolstore", "path": "/projects/coolstore" }
-          ],
-          "settings": {
-            "java.compile.nullAnalysis.mode": "automatic"
-          }
-        }
-        EOF
-
   - id: wait-for-java
     exec:
       component: mta-dev-container
@@ -103,24 +79,8 @@ commands:
         kind: build
         isDefault: true
 
-  - id: build-inventory
-    exec:
-      component: mta-dev-container
-      workingDir: /projects/inventory-management
-      commandLine: mvn clean install
-      group:
-        kind: build
-
-  - id: build-ehr
-    exec:
-      component: mta-dev-container
-      workingDir: /projects/ehr-viewer
-      commandLine: mvn clean install
-      group:
-        kind: build
-
 events:
   postStart:
-    - create-workspace-file
+    - wait-for-java 
     - setup-mta-provider-settings
 
