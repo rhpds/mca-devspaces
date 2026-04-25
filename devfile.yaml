@@ -68,6 +68,7 @@ commands:
     exec:
       component: mta-dev-container
       commandLine: |
+        rm -f /projects/.code-workspace
         cat <<EOF > /projects/.code-workspace
         {
           "folders": [
@@ -78,7 +79,6 @@ commands:
           }
         }
         EOF
-        echo "✅ Multi-root workspace file created."
 
   - id: wait-for-java
     exec:
