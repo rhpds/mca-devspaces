@@ -2,7 +2,6 @@ schemaVersion: 2.2.0
 metadata:
   name: mta-development-env
   version: 1.9.0
-  display-name: MTA & Java Development
   description: Optimized environment with default pathing and calibrated readiness
 
 attributes:
@@ -124,3 +123,4 @@ events:
   postStart:
     - create-workspace-file
     - setup-mta-provider-settings
+
