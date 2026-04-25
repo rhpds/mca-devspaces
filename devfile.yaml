@@ -124,4 +124,3 @@ events:
   postStart:
     - create-workspace-file
     - setup-mta-provider-settings
-    - wait-for-java
