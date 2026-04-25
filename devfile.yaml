@@ -55,21 +55,6 @@ commands:
           echo "❌ Failed to pull provider-settings.yaml."
         fi
 
-  - id: wait-for-java
-    exec:
-      component: mta-dev-container
-      commandLine: |
-        echo "⏳ Step 1: Waiting for Che-Code Workspace Storage..."
-        until [ -d "/checode/remote/data/User/workspaceStorage" ]; do
-          sleep 2
-        done
-
-        echo "⏳ Step 2: Waiting for Java LSP (java-external-p)..."
-        until pgrep -f "java-external-p" > /dev/null; do
-          sleep 2
-        done
-        echo "✅ Java Environment is fully ready!"
-
   - id: build-coolstore
     exec:
       component: mta-dev-container
@@ -81,6 +66,5 @@ commands:
 
 events:
   postStart:
-    - wait-for-java 
     - setup-mta-provider-settings
 
