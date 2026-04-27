@@ -3,9 +3,8 @@
 Red Hat OpenShift Dev Spaces container and devfile for [Developer Lightspeed for MTA](https://developers.redhat.com/products/mta/developer-lightspeed).
 
 ## Features
-
-- Python 3.11, Java 17, Node.js, Maven
-- MTA VS Code extension (v8.0.5) pre-installed
+- Red Hat Java extension (1.54.0)
+- MTA VS Code extension (v8.1.1) pre-installed
 - 10Gi memory allocation
 
 ## Usage
