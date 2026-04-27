@@ -10,7 +10,7 @@ environment:
 # anchor is used to reference the model to the active node below.  The extension will
 # use the active node for configuration the kai-rpc-server.
 models:
-  OpenShift: 
+  OpenShift: &active
     environment:
       OPENAI_API_KEY: "$KEY$"
     provider: ChatOpenAI
@@ -19,7 +19,7 @@ models:
       configuration:
         baseURL: "$BASE_URL$"
 
-  OpenAI: &active
+  OpenAI: 
     environment:
       OPENAI_API_KEY: "A" # Required
     provider: ChatOpenAI
