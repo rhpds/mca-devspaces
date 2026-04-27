@@ -1,70 +1,12 @@
 schemaVersion: 2.2.0
 metadata:
-  name: mta-development-env
-  version: 1.9.0
-  description: Optimized environment with default pathing and calibrated readiness
-
-attributes:
-  # Focuses the Explorer sidebar on the primary project
-  vscode-projects:
-    - coolstore
-
-projects:
-  - name: coolstore
-    git:
-      remotes:
-        origin: https://github.com/sshaaf/coolstore.git
-
+  name: dls-devspaces
 components:
   - name: mta-dev-container
-    attributes:
-      preferences:
-        workbench.colorTheme: "Default Light Modern"
-        java.server.launchMode: "Standard"
-        java.autobuild.enabled: false
-        java.import.maven.enabled: true
-        editor.codeLens: false
-        editor.minimap.enabled: false
-        java.jdt.ls.vmargs: "-Xmx2G -XX:+UseG1GC"
-        redhat.telemetry.enabled: false
-        java.compile.nullAnalysis.mode: false
-      vscode-extensions:
-        - redhat.java
-        - redhat.mta-vscode-extension-core
-        - redhat.mta-vscode-extension-java
     container:
       image: quay.io/sshaaf/dls-devspaces:latest
       memoryLimit: 10Gi
-      sourceMapping: /projects
-      mountSources: true
-      # JAVA_HOME and M2_HOME env settings removed
-
-commands:
-  - id: setup-mta-provider-settings
-    exec:
-      component: mta-dev-container
-      commandLine: |
-        TARGET_DIR="/checode/remote/data/User/globalStorage/redhat.mta-core/settings"
-        RAW_URL="https://raw.githubusercontent.com/sshaaf/dls-devspaces/devfile-test/provider-settings.yaml"
-        echo "⏳ Injecting MTA provider settings..."
-        mkdir -p "$TARGET_DIR"
-        curl -fLs "$RAW_URL" -o "$TARGET_DIR/provider-settings.yaml"
-        if [ $? -eq 0 ]; then
-          echo "✅ provider-settings.yaml successfully pulled via curl."
-        else
-          echo "❌ Failed to pull provider-settings.yaml."
-        fi
-
-  - id: build-coolstore
-    exec:
-      component: mta-dev-container
-      workingDir: /projects/coolstore
-      commandLine: mvn clean install
-      group:
-        kind: build
-        isDefault: true
-
-events:
-  postStart:
-    - setup-mta-provider-settings
-
+      # Same as image ENV; set here so the devfile is self-describing in Dev Spaces and matches Che docs.
+      env:
+        - name: DEFAULT_EXTENSIONS
+          value: /opt/vscode-extensions/redhat-java-extension-linux-x64.vsix;/opt/vscode-extensions/mta-vscode-extension-core.vsix;/opt/vscode-extensions/mta-vscode-extension-java.vsix
