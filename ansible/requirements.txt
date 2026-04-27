@@ -1,0 +1,10 @@
+# For kubernetes.core.k8s / k8s_info (used by devspaces_devworkspace.yml).
+#
+# Homebrew Python is often "externally managed" (PEP 668) — use a venv (recommended):
+#   cd ansible && ./setup-venv.sh
+#   ./run-dls-playbook.sh -e dls_k8s_namespace=your-user-che
+#
+# Or install into the same interpreter Ansible uses (may need --user or a venv):
+#   <that-python> -m pip install -r requirements.txt
+#
+kubernetes>=24.2.0

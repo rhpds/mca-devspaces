@@ -1,0 +1,142 @@
+---
+# OpenShift Dev Spaces — create a DevWorkspace from a devfile 2.2.0 (kubernetes.core).
+# Same behavior as: scripts/devspaces-create-and-start.sh
+#
+#   ansible-galaxy collection install -r collections/requirements.yml
+#
+# PyPI package "kubernetes" in the same Python as localhost (kubernetes.core k8s module):
+#   cd ansible
+#   ./setup-venv.sh
+#   ./run-dls-playbook.sh -e dls_k8s_namespace=your-user-che
+# (Homebrew: PEP 668 may block "pip install" to system Python; venv is expected.)
+# Manual:  ansible-playbook -e "ansible_python_interpreter=$PWD/.venv/bin/python3" -i inventory/localhost ...
+#
+# Create & start (requires kube context, namespace, and the kubernetes PyPI in that interpreter):
+#   (see run-dls-playbook.sh)
+#
+# Options via -e (extra vars):
+#   dls_devfile_path: default {{ playbook_dir }}/../devfile.yaml
+#   dls_devworkspace_name: otherwise from devfile metadata.name
+#   dls_editor_devfile_uri: default in-cluster che-code contribution
+#   dls_editor_devfile_internal_uri: optional; when set, overrides dls_editor_devfile_uri
+#   dls_include_contributions: "false" to drop spec.contributions
+#   dls_wait: "false" to skip waiting for Running
+#   dls_wait_timeout: 600
+#   dls_dry_run: "true" to print the manifest only
+#
+# Factory (browser) link:
+#   ansible-playbook -i inventory/localhost devspaces_devworkspace.yml -e dls_mode=factory \
+#     -e dls_devspaces_base=https://devspaces.apps.mycluster.com -e dls_raw_devfile_url=RAW_GIT_DEVFILE_URL
+
+- name: OpenShift Dev Spaces — factory URL or create DevWorkspace
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    dls_mode: "create"  # create | factory
+    dls_devfile_path: "{{ playbook_dir }}/../devfile.yaml"
+    dls_k8s_namespace: ""
+    dls_devworkspace_name: ""
+    dls_editor_devfile_uri: "http://devspaces-dashboard.openshift-devspaces.svc:8080/dashboard/api/editors/devfile?che-editor=che-incubator/che-code/latest"
+    dls_editor_devfile_internal_uri: ""
+    dls_include_contributions: true
+    dls_wait: true
+    dls_wait_timeout: 600
+    dls_wait_delay: 5
+    dls_dry_run: false
+  tasks:
+    - name: Build factory link (no cluster / Python kubernetes required)
+      when: dls_mode | default('create', true) == "factory"
+      block:
+        - name: Assert factory parameters
+          assert:
+            that:
+              - dls_devspaces_base is defined
+              - dls_raw_devfile_url is defined
+            fail_msg: "Set dls_devspaces_base and dls_raw_devfile_url when dls_mode=factory."
+
+        - name: Open this URL in a browser where you are logged into OpenShift
+          debug:
+            msg: "{{ (dls_devspaces_base | trim | regex_replace('/$', '')) + '/f?url=' + (dls_raw_devfile_url | urlencode) }}"
+
+    - name: Create DevWorkspace from local devfile
+      when: dls_mode | default('create', true) != "factory"
+      block:
+        - name: Get current OpenShift project (if oc is in PATH)
+          command: oc project -q
+          register: dls_oc_current_ns
+          changed_when: false
+          failed_when: false
+
+        - name: Choose target namespace
+          set_fact:
+            dls_effective_ns: "{{ dls_k8s_namespace if dls_k8s_namespace is defined and (dls_k8s_namespace | string | trim | length) > 0 else (dls_oc_current_ns.stdout | default('') | trim) }}"
+
+        - name: Require target namespace
+          assert:
+            that: dls_effective_ns is defined and dls_effective_ns | string | length > 0
+            fail_msg: "Set -e dls_k8s_namespace=... or use oc project to select a project first (oc must succeed)."
+
+        - name: Expose effective namespace to template
+          set_fact:
+            dls_k8s_namespace: "{{ dls_effective_ns }}"
+
+        - name: Read devfile from file
+          set_fact:
+            _devfile_raw: "{{ lookup('file', dls_devfile_path) | from_yaml }}"
+
+        - name: Build spec.template (devfile without schemaVersion)
+          set_fact:
+            _devfile_template: "{{ _devfile_raw | dict2items | rejectattr('key', 'equalto', 'schemaVersion') | list | items2dict }}"
+
+        - name: Derive name from devfile metadata
+          set_fact:
+            _d_meta: "{{ _devfile_raw['metadata'] | default({}) }}"
+
+        - name: Sanitize K8s object name (seed)
+          set_fact:
+            dls_name_seed: "{{ _d_meta['name'] | default('workspace', true) | string | lower | replace('_', '-') | regex_replace('[^a-z0-9-]', '') | trim }}"
+
+        - name: Truncate to 57 characters
+          set_fact:
+            dls_name_sanitized: "{{ dls_name_seed if dls_name_seed | length < 58 else dls_name_seed[0:57] }}"
+
+        - name: Final DevWorkspace name
+          set_fact:
+            dls_k8s_name: "{{ dls_devworkspace_name if (dls_devworkspace_name | default('') | string | length > 0) else dls_name_sanitized }}"
+
+        - name: Che-code contribution URI
+          set_fact:
+            dls_editor_effective: "{{ dls_editor_devfile_internal_uri if (dls_editor_devfile_internal_uri | default('') | string | length) > 0 else dls_editor_devfile_uri }}"
+
+        - name: Render DevWorkspace
+          set_fact:
+            dls_devws_definition: "{{ lookup('template', 'devworkspace.yaml.j2') | from_yaml }}"
+
+        - name: Show rendered manifest
+          when: dls_dry_run | default(false) | bool
+          debug:
+            var: dls_devws_definition
+
+        - name: Create or update DevWorkspace
+          when: not (dls_dry_run | default(false) | bool)
+          kubernetes.core.k8s:
+            state: present
+            definition: "{{ dls_devws_definition }}"
+
+        - name: Wait for phase Running
+          when: not (dls_dry_run | default(false) | bool) and dls_wait | default(true) | bool
+          kubernetes.core.k8s_info:
+            api_version: workspace.devfile.io/v1alpha2
+            kind: DevWorkspace
+            name: "{{ dls_k8s_name }}"
+            namespace: "{{ dls_effective_ns }}"
+          register: dls_dw
+          until: (dls_dw.resources | default([]) | length > 0) and (dls_dw.resources[0].status is defined) and (dls_dw.resources[0].status.phase is defined) and (dls_dw.resources[0].status.phase == "Running")
+          delay: "{{ dls_wait_delay | int }}"
+          retries: "{{ (dls_wait_timeout | int) // (dls_wait_delay | int if (dls_wait_delay | int) > 0 else 1) }}"
+
+        - name: Show workspace status (incl. mainUrl when set)
+          when: not (dls_dry_run | default(false) | bool) and dls_wait | default(true) | bool
+          debug:
+            msg: "{{ dls_dw.resources[0].status | to_nice_yaml }}"

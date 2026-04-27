@@ -1,0 +1,15 @@
+apiVersion: workspace.devfile.io/v1alpha2
+kind: DevWorkspace
+metadata:
+  name: "{{ dls_k8s_name }}"
+  namespace: "{{ dls_k8s_namespace }}"
+spec:
+  routingClass: che
+  started: true
+{% if dls_include_contributions | bool %}
+  contributions:
+    - name: ide
+      uri: {{ dls_editor_effective | to_json }}
+{% endif %}
+  template:
+{{ _devfile_template | to_nice_yaml | indent(4, true) }}
