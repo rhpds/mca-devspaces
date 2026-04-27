@@ -1,0 +1,15 @@
+{
+  "workbench.colorTheme": "Default Light+",
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.maven.enabled": true,
+  "java.server.launchMode": "Standard",
+  "java.autobuild.enabled": true,
+  "java.project.importOnFirstTimeStartup": "automatic",
+  "java.import.generatesMetadataFilesAtProjectRoot": true,
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/.git/objects/**": true
+  },
+  "security.workspace.trust.enabled": false,
+  "security.workspace.trust.untrustedFiles": "open"
+}

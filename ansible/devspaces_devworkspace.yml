@@ -23,6 +23,11 @@
 #   dls_wait: "false" to skip waiting for Running
 #   dls_wait_timeout: 600
 #   dls_dry_run: "true" to print the manifest only
+#   dls_apply_vscode_editor_configmap: "false" to skip Che vscode-editor-configurations
+#   dls_che_editor_config_dir — override path to settings.json … policy.json
+#
+# Che VS Code editor ConfigMap (applied before DevWorkspace):
+#   https://eclipse.dev/che/docs/stable/administration-guide/editor-configurations-for-microsoft-visual-studio-code/
 #
 # Factory (browser) link:
 #   ansible-playbook -i inventory/localhost devspaces_devworkspace.yml -e dls_mode=factory \
@@ -44,6 +49,9 @@
     dls_wait_timeout: 600
     dls_wait_delay: 5
     dls_dry_run: false
+    dls_che_editor_config_dir: "{{ playbook_dir }}/../config/che-editor"
+    dls_vscode_editor_configmap_name: vscode-editor-configurations
+    dls_apply_vscode_editor_configmap: true
   tasks:
     - name: Build factory link (no cluster / Python kubernetes required)
       when: dls_mode | default('create', true) == "factory"
@@ -80,6 +88,41 @@
         - name: Expose effective namespace to template
           set_fact:
             dls_k8s_namespace: "{{ dls_effective_ns }}"
+
+        - name: Load Che editor ConfigMap JSON files (vscode-editor-configurations)
+          when: dls_apply_vscode_editor_configmap | default(true) | bool
+          ansible.builtin.set_fact:
+            dls_vscode_cm_data: "{{ dls_vscode_cm_data | default({}) | combine({ item: lookup('file', dls_che_editor_config_dir + '/' + item) }) }}"
+          loop:
+            - settings.json
+            - extensions.json
+            - product.json
+            - configurations.json
+            - policy.json
+
+        - name: Render vscode-editor-configurations ConfigMap
+          when: dls_apply_vscode_editor_configmap | default(true) | bool
+          ansible.builtin.set_fact:
+            dls_vscode_cm_definition:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: "{{ dls_vscode_editor_configmap_name }}"
+                namespace: "{{ dls_effective_ns }}"
+                labels:
+                  app.kubernetes.io/part-of: che.eclipse.org
+              data: "{{ dls_vscode_cm_data }}"
+
+        - name: Show vscode editor ConfigMap (dry run)
+          when: dls_apply_vscode_editor_configmap | default(true) | bool and dls_dry_run | default(false) | bool
+          ansible.builtin.debug:
+            var: dls_vscode_cm_definition
+
+        - name: Apply vscode-editor-configurations before DevWorkspace
+          when: dls_apply_vscode_editor_configmap | default(true) | bool and not (dls_dry_run | default(false) | bool)
+          kubernetes.core.k8s:
+            state: present
+            definition: "{{ dls_vscode_cm_definition }}"
 
         - name: Read devfile from file
           set_fact:

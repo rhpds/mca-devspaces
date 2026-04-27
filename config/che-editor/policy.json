@@ -1,0 +1,8 @@
+{
+  "BlockCliExtensionsInstallation": false,
+  "BlockDefaultExtensionsInstallation": false,
+  "BlockInstallFromVSIXCommandExtensionsInstallation": false,
+  "AllowedExtensions": {
+    "*": true
+  }
+}

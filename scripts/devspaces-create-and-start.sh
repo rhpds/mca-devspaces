@@ -17,14 +17,22 @@
 #   --no-editor-fragment
 #                 Omit spec.contributions (che-code). Not recommended for Dev Spaces;
 #                 the cluster will use defaults if any.
+#   --skip-vscode-editor-config
+#                 Do not apply the Che vscode-editor-configurations ConfigMap (normally first).
 #
 # Environment:
+#   VSCODE_EDITOR_CONFIG_DIR   Directory with settings.json, extensions.json, product.json,
+#                              configurations.json, policy.json (default: <repo>/config/che-editor)
+#   VSCODE_EDITOR_CONFIGMAP_NAME  ConfigMap name (default: vscode-editor-configurations)
 #   EDITOR_DEVFILE_URI
 #     Devfile URL for the IDE contribution (fetched in-cluster by the operator).
 #     Default is the in-cluster devspaces-dashboard Service (works on typical OpenShift).
 #   EDITOR_DEVFILE_INTERNAL_URI
 #     Override for the default above if your install differs, e.g. a public route:
 #     https://<devspaces-route-host>/dashboard/api/editors/devfile?che-editor=che-incubator/che-code/latest
+#
+# Che Code OSS editor config (ConfigMap) — applied before DevWorkspace:
+#   https://eclipse.dev/che/docs/stable/administration-guide/editor-configurations-for-microsoft-visual-studio-code/
 #
 # Requirements: oc (or kubectl), mikefarah yq v4+ (https://github.com/mikefarah/yq)
 #   (not the PyPI "yq" package that wraps jq), and a cluster login.
@@ -49,6 +57,11 @@ KUBE="${KUBE:-$(command -v kubectl || true)}"
 have sed || die "sed is required"
 have tr  || die "tr is required"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+VSCODE_EDITOR_CONFIG_DIR="${VSCODE_EDITOR_CONFIG_DIR:-$REPO_ROOT/config/che-editor}"
+VSCODE_EDITOR_CONFIGMAP_NAME="${VSCODE_EDITOR_CONFIGMAP_NAME:-vscode-editor-configurations}"
+
 # Default: internal devspaces-dashboard; the controller fetches this in-cluster
 DEFAULT_EDITOR_DEVFILE_INTERNAL_URI="http://devspaces-dashboard.openshift-devspaces.svc:8080/dashboard/api/editors/devfile?che-editor=che-incubator/che-code/latest"
 
@@ -58,6 +71,26 @@ sanitize_name() {
 
 k8s_apply_from_stdin() {
   "$KUBE" apply -f - "$@"
+}
+
+# https://eclipse.dev/che/docs/stable/administration-guide/editor-configurations-for-microsoft-visual-studio-code/
+render_vscode_editor_configmap_yaml() {
+  local ns=$1
+  local f
+  local -a from_args=()
+  for f in settings.json extensions.json product.json configurations.json policy.json; do
+    [[ -f "$VSCODE_EDITOR_CONFIG_DIR/$f" ]] || die "missing $VSCODE_EDITOR_CONFIG_DIR/$f (see Che editor ConfigMap doc)"
+    from_args+=(--from-file="$VSCODE_EDITOR_CONFIG_DIR/$f")
+  done
+  "$KUBE" create configmap "$VSCODE_EDITOR_CONFIGMAP_NAME" "${from_args[@]}" \
+    -n "$ns" -o yaml --dry-run=client | yq e '
+    .metadata.labels["app.kubernetes.io/part-of"] = "che.eclipse.org"
+  '
+}
+
+apply_vscode_editor_configmap() {
+  local ns=$1
+  render_vscode_editor_configmap_yaml "$ns" | k8s_apply_from_stdin
 }
 
 k8s_wait_running() {
@@ -143,6 +176,7 @@ factory_url() {
 DRY=false
 NO_WAIT=false
 CONTRIBS=true
+SKIP_VSCODE_EDITOR_CM=false
 DEVFILE="${DEVFILE:-devfile.yaml}"
 NAMESPACE=""
 K8S_NAME=""
@@ -163,6 +197,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY=true; shift ;;
     --no-wait) NO_WAIT=true; shift ;;
     --no-editor-fragment) CONTRIBS=false; shift ;;
+    --skip-vscode-editor-config) SKIP_VSCODE_EDITOR_CM=true; shift ;;
     -h|--help) usage ;;
     *) die "unknown option: $1 (use -h)" ;;
   esac
@@ -191,8 +226,18 @@ fi
 YAML_OUT=$(devworkspace_from_devfile "$DEVFILE" "$NAMESPACE" "$K8S_NAME" "$CONTRIBS" "$EDITOR_CONTRIB_URI")
 
 if [[ $DRY == true ]]; then
+  if [[ $SKIP_VSCODE_EDITOR_CM != true ]]; then
+    echo "# --- ConfigMap $VSCODE_EDITOR_CONFIGMAP_NAME (Che editor config, dry-run) ---"
+    render_vscode_editor_configmap_yaml "$NAMESPACE"
+    echo "# --- DevWorkspace ---"
+  fi
   echo "$YAML_OUT"
   exit 0
+fi
+
+if [[ $SKIP_VSCODE_EDITOR_CM != true ]]; then
+  apply_vscode_editor_configmap "$NAMESPACE"
+  echo "Applied ConfigMap $VSCODE_EDITOR_CONFIGMAP_NAME (Che VS Code editor configuration)."
 fi
 
 echo "$YAML_OUT" | k8s_apply_from_stdin
