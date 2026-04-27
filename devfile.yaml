@@ -1,6 +1,6 @@
 schemaVersion: 2.2.0
 metadata:
-  name: dls-devspaces
+  name: MTA-workspace
   display-name: MTA & Java Development
 
 attributes:
