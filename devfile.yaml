@@ -27,7 +27,7 @@ commands:
       commandLine: |
         TARGET_DIR="/checode/remote/data/User/globalStorage/redhat.mta-core/settings"
         # Using the raw URL to avoid getting HTML instead of YAML
-        RAW_URL="https://raw.githubusercontent.com/sshaaf/dls-devspaces/devfile-test/provider-settings.yaml"
+        RAW_URL="https://raw.githubusercontent.com/sshaaf/dls-devspaces/refs/heads/main/config/dls/provider-settings.yaml"
         echo "Injecting MTA provider settings..."
         mkdir -p "$TARGET_DIR"
         # -f fails on 404, -L follows redirects, -s is silent
