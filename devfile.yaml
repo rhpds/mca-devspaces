@@ -1,6 +1,19 @@
 schemaVersion: 2.2.0
 metadata:
   name: dls-devspaces
+  display-name: MTA & Java Development
+
+attributes:
+  # Focuses the Explorer sidebar on the primary project
+  vscode-projects:
+    - coolstore
+
+projects:
+  - name: coolstore
+    git:
+      remotes:
+        origin: https://github.com/sshaaf/coolstore.git
+
 components:
   - name: mta-dev-container
     container:
