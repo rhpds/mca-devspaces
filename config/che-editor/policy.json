@@ -3,6 +3,11 @@
   "BlockDefaultExtensionsInstallation": false,
   "BlockInstallFromVSIXCommandExtensionsInstallation": false,
   "AllowedExtensions": {
-    "*": true
+    "redhat": "stable",
+    "vscjava": "stable",
+    "redhat.java": true,
+    "redhat.mta-core": true,
+    "redhat.mta-java": true,
+    "vscjava.vscode-java-pack": "stable"
   }
 }

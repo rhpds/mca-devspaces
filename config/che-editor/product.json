@@ -1,7 +1,8 @@
 {
   "trustedExtensionAuthAccess": [
     "redhat.java",
-    "redhat.mta-vscode-extension",
+    "redhat.mta-core",
+    "redhat.mta-java",
     "vscjava.vscode-java-pack"
   ]
 }

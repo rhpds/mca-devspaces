@@ -40,4 +40,4 @@ commands:
 
 events:
   postStart:
-    - create-workspace-file
+    - setup-mta-global-settings
