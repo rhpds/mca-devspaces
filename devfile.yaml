@@ -12,7 +12,7 @@ projects:
   - name: coolstore
     git:
       remotes:
-        origin: https://github.com/sshaaf/coolstore.git
+        origin: https://github.com/rhpds/mca-coolstore.git
 
 components:
   - name: mta-dev-container
