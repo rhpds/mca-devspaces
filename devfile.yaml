@@ -6,13 +6,13 @@ metadata:
 attributes:
   # Focuses the Explorer sidebar on the primary project
   vscode-projects:
-    - coolstore
+    - parasol-insurance
 
 projects:
-  - name: coolstore
+  - name: parasol-insurance
     git:
       remotes:
-        origin: https://github.com/rhpds/mca-coolstore.git
+        origin: https://github.com/sshaaf/parasol-insurance-eap.git
 
 components:
   - name: mta-dev-container
