@@ -6,8 +6,8 @@ USER root
 # Add MTA and Java extensions
 RUN mkdir -p /opt/vscode-extensions
 # Add MTA and Java extensions
-RUN curl -L -o /opt/vscode-extensions/mta-vscode-extension-core.vsix https://github.com/migtools/editor-extensions/releases/download/v8.1.1/mta-core-8.1.1.vsix
-RUN curl -L -o /opt/vscode-extensions/mta-vscode-extension-java.vsix https://github.com/migtools/editor-extensions/releases/download/v8.1.1/mta-java-8.1.1.vsix
+RUN curl -L -o /opt/vscode-extensions/mta-vscode-extension-core.vsix https://github.com/migtools/editor-extensions/releases/download/v8.2.1/mta-core-8.2.1.vsix
+RUN curl -L -o /opt/vscode-extensions/mta-vscode-extension-java.vsix https://github.com/migtools/editor-extensions/releases/download/v8.2.1/mta-java-8.2.1.vsix
 
 # Red Hat Java extension
 RUN curl -L -o /opt/vscode-extensions/redhat-java-extension-linux-x64.vsix https://github.com/redhat-developer/vscode-java/releases/download/v1.54.0/vscode-java-1.54.0-923.vsix
